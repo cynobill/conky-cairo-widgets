@@ -1,0 +1,24 @@
+conky: desktop window (3bd) is root window
+conky: window type - normal
+conky: drawing to created window (0x1800002)
+conky: drawing to double buffer
+BarGraph: CPU Graph
+  x: 0
+  y: 0
+  w: 200
+  h: 60
+  max_data_value: 0
+  calc_max_value: true
+  draw_to_right: true
+  draw_upward: true
+  line_caps: 0
+  fade_start: 0.7
+  bar_spacing: 0.25
+  bar_colors: 
+		{[0.0], [0.0], [1.0], [0.0], [1.0]}
+		{[0.5], [1.0], [1.0], [0.0], [1.0]}
+		{[1.0], [1.0], [0.0], [0.0], [1.0]}
+  border_width: 1
+  border_color: {[1.0], [1.0], [1.0], [1.0]}
+  conky_var: ${cpu}
+conky: received SIGINT or SIGTERM to terminate. bye!
