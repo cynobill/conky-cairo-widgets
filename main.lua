@@ -1,5 +1,8 @@
 require 'cairo'
-BarGraph = require 'bargraph'
+require 'linegraph'
+require 'graph'
+require 'bargraph'
+require 'smoothgraph'
 
 local widgets = {}
 
@@ -14,22 +17,21 @@ function conky_resized()
 end
 
 function conky_startup_hook() 
-	graph = BarGraph("CPU Graph", {
-				x = 30,
-				y = 30,
-				w = 300,
-				h = 40,
-				conky_var="${cpu}",
-				data_points = 20,
-				max_data_value = 100,
-				line_caps = BarGraph.BOTH,
-				bar_spacing = 0.2,
-				border_width = 0,
-				border_color = {1.0,1.0,0.0,1.0},
-				bar_colors = {{0.0,0.0,1.0,1.0,1.0},{1.0,1.0,0.0,0.0,1.0}}
-			})
-	graph:toString()
+	graph = Graph("CPU Graph", {x = 30, y = 50})
+	--graph:toString()
 	table.insert(widgets, graph)
+
+	graph = LineGraph("CPU LineGraph", {x= 30, y= 150, point_size= 2.0, fill= true, max_data_value= 100})
+	--graph:toString()
+	table.insert(widgets, graph)
+
+	graph = BarGraph("CPU BarGraph", {x= 30, y= 250, line_caps= BarGraph.LINECAP_BOTH})
+ 	--graph:toString()
+ 	table.insert(widgets, graph)
+
+	graph = SmoothGraph("CPU SplineGraph", {x= 30, y= 350, border_width= 0})
+ 	--graph:toString()
+ 	table.insert(widgets, graph)
 end
 
 function conky_shutdown_hook() end
@@ -47,16 +49,16 @@ function conky_pre_draw_hook()
 	local updates = tonumber(conky_parse("${updates}"))
 	if updates < 3 then return end
 
-	print(conky_window.height)
+	--print(conky_window.height)
 	if conky_resized() then
 		drawable = conky_window.drawable
 		print("Creating cairo surface and context")
 		-- preapare drawing surface
-		 cs = cairo_xlib_surface_create(conky_window.display,
-					conky_window.drawable,
-					conky_window.visual,
-					conky_window.width,
-					conky_window.height)
+		cs = cairo_xlib_surface_create(	conky_window.display,
+						conky_window.drawable,
+						conky_window.visual,
+						conky_window.width,
+						conky_window.height)
 	
 		cr = cairo_create(cs)
 	end

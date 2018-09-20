@@ -1,7 +1,8 @@
 require 'Class'
 require 'cairo'
 
-local Graph = Class(function(a, name, args)
+Graph = Class(function(a, name, args)
+	print("Graph:__init()")
 	a.data = {}
 
 	if name then
@@ -13,6 +14,7 @@ local Graph = Class(function(a, name, args)
 	if args == nil then args = {} end
 	
 	if args.x then
+		print("+"..args.x)
 		a.x = args.x
 	else
 		a.x = 0
@@ -61,29 +63,16 @@ local Graph = Class(function(a, name, args)
  	else
  		a.draw_upward = true
  	end
-
-	if args.line_caps then
-       		a.line_caps= args.line_caps
-       	else
-       		a.line_caps = 0 
-       	end
-
+	
 	if args.fade_start and args.fade_start >= 0 and  args.fade_start <= 1.0 then
 		a.fade_start = args.fade_start
 	else
-		a.fade_start = 0.7 
-	end
-
-	if args.bar_spacing and args.bar_spacing >= 0 then
-		a.bar_spacing = args.bar_spacing 
-	else
-		a.bar_spacing = 0.25 
+		a.fade_start = 0.25 
 	end
 
 	if args.border_width and args.border_width >= 0 then
 		a.border_width = args.border_width 
 	else
-		print(":::::::"..args.border_width)
 		a.border_width = 1 
 	end
 
@@ -93,19 +82,43 @@ local Graph = Class(function(a, name, args)
        		a.border_color = {1.0,1.0,1.0,1.0}
        	end
 
-	if args.bar_colors and type(args.bar_colors) == 'table' then
-      		a.bar_colors = args.bar_colors 
+	if args.pattern_colors and type(args.pattern_colors) == 'table' then
+      		a.pattern_colors = args.pattern_colors 
         else
-	      	a.bar_colors = {{0.0,0.0,1.0,0.0,1.0},
+	      	a.pattern_colors = {{0.0,0.0,1.0,0.0,1.0},
 				{0.5,1.0,1.0,0.0,1.0},
 				{1.0,1.0,0.0,0.0,1.0}}
 	end
 
-	if args.conky_var then
-		a.conky_var = args.conky_var
+	if args.point_color and type(args.point_color) == 'table' then
+		a.point_color = args.point_color
 	else
-		print("No conky variable provided, this widget will do nothing")
-		a.conky_var = "" 
+		a.point_color = {1.0,1.0,1.0,1.0}
+	end
+
+	if args.point_size and args.point_size >= 0 then
+		a.point_size = args.point_size
+	else
+		a.point_size = 1 
+	end                                                 		
+
+	if args.line_color and type(args.line_color) == 'table' then
+		a.line_color = args.line_color
+	else
+		a.line_color = {1.0,1.0,1.0,1.0}
+	end
+
+	if args.line_size and args.line_size >= 0 then
+		a.line_size = args.line_size
+	else
+		a.line_size = 2 
+	end                                                 		
+
+	if args.data_function and type(args.data_function) == 'function' then
+		a.data_function = args.data_function
+	else
+		print("No data function provided, defaulting CPU monitor")
+		a.data_function = function() return tonumber(conky_parse("${cpu}")) end 
 	end
 end)         
 
@@ -115,7 +128,7 @@ Graph.BOTTOM = 2
 Graph.BOTH = 3
 
 function Graph:toString()
-      	print("Graph: "..self.name)
+      	print(self.name.."----Graph----")
 	print("  x: "..self.x)
 	print("  y: "..self.y)
 	print("  w: "..self.w)
@@ -124,13 +137,10 @@ function Graph:toString()
 	print("  calc_max_value: "..tostring(self.calc_max_value))
 	print("  draw_to_right: "..tostring(self.draw_to_right))
 	print("  draw_upward: "..tostring(self.draw_upward))
-	print("  line_caps: "..self.line_caps)
 	print("  fade_start: "..self.fade_start)
-	print("  bar_spacing: "..self.bar_spacing)
-	
-	print("  bar_colors: ")
-	local cnt = #self.bar_colors
-	for k,v in pairs(self.bar_colors) do
+	print("  pattern_colors: ")
+	local cnt = #self.pattern_colors
+	for k,v in pairs(self.pattern_colors) do
 		local cnt2 = #v
 		local colors = "\t\t{"
 		for k2, v2 in pairs(v) do
@@ -142,7 +152,6 @@ function Graph:toString()
 		colors = colors.."}"
 		print(colors)
 	end
-
 	print("  border_width: "..self.border_width)
 
 	local colors = "{"
@@ -154,10 +163,12 @@ function Graph:toString()
 		end
 	end
 	colors = colors.."}"
-	print("  border_color: "..colors)
-	
-	print("  conky_var: "..self.conky_var)
+	print("  border_color: "..colors)	
+end
 
+
+function Graph:_get_new_data()
+ 	return self.data_function()
 end
 
 
@@ -170,12 +181,11 @@ function Graph:_update()
 		end
 	end
 
-	local new_value = tonumber(conky_parse("${cpu}"))
+	local new_value = self:_get_new_data()
 	table.insert(self.data, 1, new_value)
 
 	if self.calc_max_value and new_value > self.max_data_value then
 		self.max_data_value = new_value
-		print("new_max="..self.max_data_value)
 	end
 end
 
@@ -187,6 +197,7 @@ function Graph:_calculate_max_data_value()
 	end
 	return max
 end
+
 
 function Graph:_dump_data()
 	local data = "{"
@@ -202,70 +213,55 @@ end
 
 function Graph:_get_source(context)
 	if self.pattern == nil then
-	print("Creating pattern")
-	local pattern = cairo_pattern_create_linear(0.5,0.0,0.5,1.0)
-	for k,color in pairs(self.bar_colors) do
-		cairo_pattern_add_color_stop_rgba(pattern, color[1],color[2],color[3],color[4],color[5])
-	end
+		print("Creating pattern")
+		local pattern = cairo_pattern_create_linear(0.0,0.0,0.0,self.h)
+		
+		for k,color in pairs(self.pattern_colors) do
+			cairo_pattern_add_color_stop_rgba(pattern, color[1],color[2],color[3],color[4],color[5])
+		end
 
-	local mask = cairo_pattern_create_linear(0.0,0.5,1.0,0.5)
-	cairo_pattern_add_color_stop_rgba(mask, 0.0,		1.0,1.0,1.0,1.0)
-	cairo_pattern_add_color_stop_rgba(mask, self.fade_start,1.0,1.0,1.0,1.0)
-	cairo_pattern_add_color_stop_rgba(mask, 1.0,		1.0,1.0,1.0,0.0)
-	
-	cairo_push_group(context)
-	cairo_set_source(context, pattern)
-	cairo_mask(context, mask)
-
-	self.pattern = cairo_pop_group(context)
+		self.pattern = pattern
 	end
 	return self.pattern
 end
 
 
-function Graph:_calculate_bar_width()
-	return 1.0 / ( self.data_points + (self.data_points - 1) * self.bar_spacing)
-end		
+function Graph:_get_mask(context)
+	if self.mask == nil then
+		print("Creating mask")
+
+		mask = cairo_pattern_create_linear(0.0,0.0,self.w,0.0)
+		cairo_pattern_add_color_stop_rgba(mask, 0.0,		1.0,1.0,1.0,1.0)
+		cairo_pattern_add_color_stop_rgba(mask, self.fade_start,1.0,1.0,1.0,1.0)
+		cairo_pattern_add_color_stop_rgba(mask, 1.0,		1.0,1.0,1.0,0.0)
+	
+		self.mask = mask
+	end
+	return self.mask
+end
+
 
 function Graph:_setup_context(context)
 
-	if self.line_caps ~= Graph.NONE then
-		cairo_set_line_cap(context, CAIRO_LINE_CAP_ROUND)
-	end
-
 	cairo_translate(context, self.x, self.y)
 
-	cairo_scale(context, self.w, self.h)
-
 	if self.draw_upward then
+		cairo_translate(context, 0.0,self.h)
 		cairo_scale(context, 1.0,-1.0)
-		cairo_translate(context,0.0,-1.0)
 	end
 
 	if not self.draw_to_right then
+		cairo_translate(context,self.w,0.0)
 		cairo_scale(context, -1.0,1.0)
-		cairo_translate(context,-1.0,0.0)
 	end
 
-	cairo_rectangle(context, 0.0, 0.0, 1.0, 1.0)
+	cairo_rectangle(context, 0.0, 0.0, self.w, self.h)
 	cairo_clip(context)
-
-	local line_w = self:_calculate_bar_width()	
-
-	if self.line_caps == Graph.BOTTOM or self.line_caps == Graph.BOTH  then
-		cairo_translate(context, 0.0, (line_w / 2.0))
-	end
-
-	if self.line_caps == Graph.BOTTOM or self.line_caps == Graph.TOP  then
-		cairo_scale(context,1.0, 1.0 - (line_w / 2.0))
-	elseif self.line_caps == Graph.BOTH then
-		cairo_scale(context,1.0, 1.0 - line_w )
-	end
 end
 
-function Graph:draw(context)
-	cairo_save(context)
 
+function Graph:_draw_border(context)
+	cairo_save(context)
 	if self.border_width > 0 then
 		cairo_set_source_rgba(	context,
 					self.border_color[1],
@@ -273,38 +269,74 @@ function Graph:draw(context)
 					self.border_color[3],
 					self.border_color[4])
 		cairo_set_line_width( context, self.border_width)
-		cairo_rectangle( context, self.x, self.y, self.w, self.h)
+		cairo_rectangle( context, 0, 0, self.w, self.h)
+		cairo_stroke(context)
+	end
+	cairo_restore(context)
+end
+
+
+function Graph:_get_points()
+	local p = {}
+	local inc = self.w / (self.data_points-1)
+
+	for index, value in pairs(self.data) do
+		p[index] = {}
+		p[index].x = inc * (index - 1)
+		p[index].y = self.h * (value / self.max_data_value)
+	end
+	return p
+end
+
+function Graph:_draw_graph(context)
+	cairo_save(context)
+	cairo_push_group(context)
+
+	local points = self:_get_points()
+
+	for index, p in pairs(points) do
+		cairo_move_to(context,p.x,p.y)                 	
+		cairo_arc(context, p.x, p.y, 2, 0, math.pi * 2)
+	end
+	cairo_set_source_rgba(context,.8,.8,.8,1.0)
+	cairo_stroke(context)
+
+	cairo_move_to(context, points[1].x, points[1].y)
+	for index, p in pairs(points) do
+		cairo_line_to(context,p.x,p.y)
+	end
+	
+	cairo_set_source(context, self:_get_source(context))
+	
+	self.fill = true
+	if self.fill then
+		cairo_line_to(context, points[#points].x, 0)
+		cairo_line_to(context, 0, 0)
+		cairo_close_path(context)
+		cairo_fill(context)
+	else
 		cairo_stroke(context)
 	end
 
+	cairo_pop_group_to_source(context)
 
-	self:_setup_context(context)
-	self:_update()
-
-	local line_w = self:_calculate_bar_width()
-	local spacer = (1.0 - line_w * self.data_points) / (self.data_points - 1)
-	local inc = line_w + spacer
-	local start = line_w / 2.0
-
-
-	--avoid divide by zero shit
-	if self.max_data_value == 0 then return end
-
-	for index,value in pairs(self.data) do
-		local x = start + (index-1) * inc
-		local h = value / self.max_data_value
-		cairo_move_to(context, x, 0)
-		cairo_line_to(context, x, h)
+	if self.fade_start < 1.0 then
+		cairo_mask(context, self:_get_mask(context))
+	else
+		cairo_paint(context)
 	end	
-	
-	cairo_set_line_width(context, line_w)
-	cairo_set_source(context, self:_get_source(context))
-	cairo_stroke(context)
-	cairo_restore(context)
 
-	cairo_destroy(cr)
-	cairo_surface_destroy(cs)
-	cr=nil
+	cairo_restore(context)
 end
 
-return Graph
+
+function Graph:draw(context)
+	cairo_save(context)
+
+	self:_update()
+	self:_setup_context(context)
+	self:_draw_border(context)
+	self:_draw_graph(context)
+
+	cairo_restore(context)
+end
