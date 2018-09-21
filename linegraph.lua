@@ -2,7 +2,8 @@ require 'Class'
 require 'graph'
 require 'cairo'
 
-LineGraph = Class(Graph, function(a, name, args)
+LineGraph = Class(Graph)
+--[[, function(a, name, args)
 	print("LineGraph:__init()")
 	Graph.init(a, name, args)
 
@@ -91,6 +92,4 @@ function LineGraph:_draw_graph(context)
 
 	cairo_restore(context)
 end
-
-
-return LineGraph
+--]]

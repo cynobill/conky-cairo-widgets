@@ -288,43 +288,85 @@ function Graph:_get_points()
 	return p
 end
 
-function Graph:_draw_graph(context)
+function Graph:_get_paths(context, p)
+	local paths = {}
 	cairo_save(context)
-	cairo_push_group(context)
+	cairo_new_path(context)
+	cairo_move_to(context, p[1].x, p[1].y)
+	for i =2, #p, 1 do
+		cairo_line_to(context, p[i].x, p[i].y)
+	end
+	paths[1] = cairo_copy_path(context)
+	
+	cairo_line_to(context, p[#p].x, 0)
+	cairo_line_to(context, 0, 0)
+	cairo_close_path(context)
+	paths[2] = cairo_copy_path(context)
+	cairo_restore(context)
+	return paths
+end
 
-	local points = self:_get_points()
+function Graph:_draw_line(context, path)
+	cairo_save(context)
+	cairo_new_path(context)
+	cairo_append_path(context, path)
+	cairo_set_source_rgba(	context, 
+				self.line_color[1],
+				self.line_color[2],
+				self.line_color[3],
+				self.line_color[4])
+	cairo_stroke(context)
+	cairo_restore(context)
+end
 
+function Graph:_draw_points(context, points)
+	cairo_save(context)
 	for index, p in pairs(points) do
 		cairo_move_to(context,p.x,p.y)                 	
 		cairo_arc(context, p.x, p.y, 2, 0, math.pi * 2)
 	end
-	cairo_set_source_rgba(context,.8,.8,.8,1.0)
+	cairo_set_source_rgba(	context, 
+				self.point_color[1],
+				self.point_color[2],
+				self.point_color[3],
+				self.point_color[4])
 	cairo_stroke(context)
+	cairo_restore(context)
+end
 
-	cairo_move_to(context, points[1].x, points[1].y)
-	for index, p in pairs(points) do
-		cairo_line_to(context,p.x,p.y)
-	end
-	
-	cairo_set_source(context, self:_get_source(context))
-	
-	self.fill = true
-	if self.fill then
-		cairo_line_to(context, points[#points].x, 0)
-		cairo_line_to(context, 0, 0)
-		cairo_close_path(context)
-		cairo_fill(context)
-	else
-		cairo_stroke(context)
-	end
 
-	cairo_pop_group_to_source(context)
+function Graph:_fill_graph(context,path)
+	cairo_save(context)
+	cairo_new_path(context)
+	cairo_append_path(context, path)
+	cairo_set_source(context, self:_get_source())
+	cairo_fill(context)
+	cairo_restore(context)
+end
 
+function Graph:_mask_graph(context)
 	if self.fade_start < 1.0 then
 		cairo_mask(context, self:_get_mask(context))
 	else
 		cairo_paint(context)
 	end	
+end
+
+
+function Graph:_draw_graph(context)
+	cairo_save(context)
+	cairo_push_group(context)
+
+	local points = self:_get_points()
+	local paths = self:_get_paths(context,points)
+	
+	self:_fill_graph(context, paths[2])
+	self:_draw_line(context, paths[1])
+	self:_draw_points(context, points)
+
+	cairo_pop_group_to_source(context)
+
+	self:_mask_graph(context)
 
 	cairo_restore(context)
 end
