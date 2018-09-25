@@ -83,8 +83,6 @@ function SmoothGraph:_get_paths(context, p)
 	local paths = {}
 	cairo_save(context)
 
-	print(">>>>>>>>1")
-	
 	local x1
 	for index=1, #self.data, 1 do
 		if index == 1 then
@@ -122,5 +120,4 @@ function SmoothGraph:_draw_graph(context)
 	if #self.data < 3 then return end
 
 	Graph._draw_graph(self, context)
-	print(">>>>>>>>2")
 end

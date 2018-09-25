@@ -255,8 +255,8 @@ function Graph:_setup_context(context)
 		cairo_scale(context, -1.0,1.0)
 	end
 
-	cairo_rectangle(context, 0.0, 0.0, self.w, self.h)
-	cairo_clip(context)
+--	cairo_rectangle(context, 0.0, 0.0, self.w, self.h)
+--	cairo_clip(context)
 end
 
 
@@ -343,6 +343,7 @@ function Graph:_fill_graph(context,path)
 	cairo_fill(context)
 	cairo_restore(context)
 end
+
 
 function Graph:_mask_graph(context)
 	if self.fade_start < 1.0 then

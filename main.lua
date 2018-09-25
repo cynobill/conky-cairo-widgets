@@ -16,6 +16,7 @@ function conky_resized()
 	return false
 end
 
+
 function conky_startup_hook() 
 	graph = Graph("CPU Graph", {x = 30, y = 50})
 	--graph:toString()
@@ -25,8 +26,9 @@ function conky_startup_hook()
 	--graph:toString()
 	table.insert(widgets, graph)
 
-	graph = BarGraph("CPU BarGraph", {x= 30, y= 250, line_caps= BarGraph.LINECAP_BOTH})
- 	--graph:toString()
+	--graph = BarGraph("CPU BarGraph", {x= 30, y= 250, rounded_bars=true})
+	graph = BarGraph("CPU BarGraph", {x= 30, y= 250, rounded_bars=false, max_data_value=100, bar_spacing=0.4})
+	graph:toString()
  	table.insert(widgets, graph)
 
 	graph = SmoothGraph("CPU SplineGraph", {x= 30, y= 350, border_width= 0})
@@ -34,7 +36,14 @@ function conky_startup_hook()
  	table.insert(widgets, graph)
 end
 
-function conky_shutdown_hook() end
+
+function conky_shutdown_hook() 
+	cairo_destroy(cr)
+	cairo_surface_destroy(cs)
+	cr=nil
+	print('Conky shutting down') 
+end
+
 
 local win_w = nil 
 local win_h = nil
@@ -66,11 +75,6 @@ function conky_pre_draw_hook()
 	for k,v in pairs(widgets) do
 		v:draw(cr)
 	end
-
---	cairo_destroy(cr)
---	cairo_surface_destroy(cs)
---	cr=nil
 end
 
 function conky_post_draw_hook() end
-
