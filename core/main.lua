@@ -1,9 +1,8 @@
 require 'cairo'
-require 'linegraph'
-require 'graph'
-require 'bargraph'
-require 'smoothgraph'
-require 'widget'
+--require 'widgets.linegraph'
+--require 'widgets.graph'
+--require 'widgets.smoothgraph'
+require 'widgets.widget'
 
 local widgets = {}
 
@@ -19,14 +18,17 @@ end
 
 
 function conky_startup_hook() 
-	widget = ("TestWidget", {x = 10, y = 10, w = 290, h = 60, background='tenticle.png',border_width=2.0})
+	widget = Widget("TestWidget", {	x = 10, y = 10, w = 290, h = 60, 
+					background='spiral1_src.png',
+					mask_image='dot_mask.png'})
         widget:toString()
         table.insert(widgets, widget)
+--[[
 
 	graph = Graph("CPU Graph", {x = 10, y = 10, w = 290, h = 60, background='tenticle.png',border_width=2.0})
 	graph:toString()
 	table.insert(widgets, graph)
---[[
+	
 	graph = LineGraph("CPU LineGraph", {x= 30, y= 150, point_size= 2.0, fill= true, max_data_value= 100})
 	--graph:toString()
 	table.insert(widgets, graph)
